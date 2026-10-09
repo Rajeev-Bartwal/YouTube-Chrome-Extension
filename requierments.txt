@@ -1,0 +1,17 @@
+pypdf
+chromadb
+
+langchain
+langchain-community
+langchain-text-splitters
+langchain-experimental
+
+langchain-huggingface
+huggingface_hub
+
+langchain-google-genai
+
+pydantic
+python-dotenv
+
+langchain-groq
