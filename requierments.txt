@@ -1,7 +1,10 @@
 pypdf
 chromadb
+langchain-chroma
+faiss-cpu
 
 langchain
+lamgchain_chroma
 langchain-community
 langchain-text-splitters
 langchain-experimental
@@ -15,3 +18,5 @@ pydantic
 python-dotenv
 
 langchain-groq
+youtube-transcript-api
+tiktoken
