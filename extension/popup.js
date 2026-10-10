@@ -5,17 +5,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const statusText = document.getElementById("statusText");
   const videoTitleText = document.getElementById("videoTitleText");
   const videoIdText = document.getElementById("videoIdText");
-  const changeVideoBtn = document.getElementById("changeVideoBtn");
-  const videoInputDrawer = document.getElementById("videoInputDrawer");
-  const manualVideoInput = document.getElementById("manualVideoInput");
-  const saveVideoBtn = document.getElementById("saveVideoBtn");
-  const demoVideoBtn = document.getElementById("demoVideoBtn");
   const chatMessages = document.getElementById("chatMessages");
+  const greetingBox = document.getElementById("greetingBox");
+  const chatQuickChips = document.getElementById("chatQuickChips");
   const chatForm = document.getElementById("chatForm");
   const questionInput = document.getElementById("questionInput");
   const sendBtn = document.getElementById("sendBtn");
   const loadingIndicator = document.getElementById("loadingIndicator");
-  const chipButtons = document.querySelectorAll(".chip-btn");
+  const contentArea = document.querySelector(".content-scroll-area");
   
   // Settings Modal Elements
   const settingsBtn = document.getElementById("settingsBtn");
@@ -25,6 +22,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const testConnectionBtn = document.getElementById("testConnectionBtn");
   const clearChatBtn = document.getElementById("clearChatBtn");
   const serverTestResult = document.getElementById("serverTestResult");
+  const manualVideoInput = document.getElementById("manualVideoInput");
+  const saveVideoBtn = document.getElementById("saveVideoBtn");
+  const demoVideoBtn = document.getElementById("demoVideoBtn");
 
   // State
   let currentVideoId = "w2tidSx0Zhk"; // Default demo video
@@ -111,21 +111,35 @@ document.addEventListener("DOMContentLoaded", () => {
     return result.join("");
   }
 
+  // Set visual status safely
+  function setStatus(type, label) {
+    if (statusBadge) {
+      statusBadge.className = `status-badge status-${type}`;
+    }
+    if (statusText) {
+      statusText.textContent = label;
+    }
+  }
+
   // Initialize
   async function init() {
-    // 1. Load settings
-    const savedServer = await Storage.get("serverUrl", "http://127.0.0.1:8000");
-    serverUrl = savedServer;
-    serverUrlInput.value = serverUrl;
+    try {
+      // 1. Load settings
+      const savedServer = await Storage.get("serverUrl", "http://127.0.0.1:8000");
+      serverUrl = savedServer;
+      if (serverUrlInput) serverUrlInput.value = serverUrl;
 
-    // 2. Detect active tab video
-    await detectCurrentTabVideo();
+      // 2. Detect active tab video
+      await detectCurrentTabVideo();
 
-    // 3. Load chat history for video
-    await loadChatHistory();
+      // 3. Load chat history for video
+      await loadChatHistory();
 
-    // 4. Check backend server health
-    checkBackendHealth();
+      // 4. Check backend server health
+      checkBackendHealth();
+    } catch (e) {
+      console.error("Initialization error:", e);
+    }
   }
 
   // Detect active YouTube tab
@@ -139,8 +153,9 @@ document.addEventListener("DOMContentLoaded", () => {
           const id = parseVideoId(url);
           if (id) {
             currentVideoId = id;
-            videoTitleText.textContent = tabs[0].title ? tabs[0].title.replace(" - YouTube", "") : "YouTube Video";
-            videoIdText.textContent = id;
+            const title = tabs[0].title ? tabs[0].title.replace(" - YouTube", "") : "YouTube Video";
+            if (videoTitleText) videoTitleText.textContent = title;
+            if (videoIdText) videoIdText.textContent = id;
             detected = true;
           }
         }
@@ -152,17 +167,18 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!detected) {
       const savedVideoId = await Storage.get("lastVideoId", "w2tidSx0Zhk");
       currentVideoId = savedVideoId;
-      videoIdText.textContent = currentVideoId;
-      videoTitleText.textContent = currentVideoId === "w2tidSx0Zhk" 
-        ? "Paramedical Admission Guide (Demo Video)" 
-        : `Custom Video (${currentVideoId})`;
+      if (videoIdText) videoIdText.textContent = currentVideoId;
+      if (videoTitleText) {
+        videoTitleText.textContent = currentVideoId === "w2tidSx0Zhk" 
+          ? "Paramedical Admission Guide (Demo)" 
+          : `Video: ${currentVideoId}`;
+      }
     }
   }
 
   // Check backend server health
   async function checkBackendHealth() {
-    statusBadge.className = "status-badge status-checking";
-    statusText.textContent = "Checking...";
+    setStatus("checking", "Checking");
 
     try {
       const controller = new AbortController();
@@ -171,21 +187,34 @@ document.addEventListener("DOMContentLoaded", () => {
       clearTimeout(timeoutId);
 
       if (res.ok) {
-        statusBadge.className = "status-badge status-online";
-        statusText.textContent = "Connected";
-        statusBadge.title = "Backend is online and ready!";
+        setStatus("online", "Connected");
       } else {
         throw new Error("Invalid response");
       }
     } catch (e) {
-      statusBadge.className = "status-badge status-offline";
-      statusText.textContent = "Offline";
-      statusBadge.title = "Backend offline. Make sure 'python server.py' is running.";
+      setStatus("offline", "Offline");
+    }
+  }
+
+  // Switch UI view between Greeting and Chat
+  function setChatMode(inChat) {
+    if (inChat) {
+      if (greetingBox) greetingBox.classList.add("hidden");
+      if (chatMessages) chatMessages.classList.remove("hidden");
+      if (chatQuickChips) chatQuickChips.classList.remove("hidden");
+    } else {
+      if (greetingBox) greetingBox.classList.remove("hidden");
+      if (chatMessages) chatMessages.classList.add("hidden");
+      if (chatQuickChips) chatQuickChips.classList.add("hidden");
     }
   }
 
   // Add message to chat UI
   function appendMessage(role, text) {
+    if (!chatMessages) return;
+
+    setChatMode(true);
+
     const msgDiv = document.createElement("div");
     msgDiv.className = `message ${role}-message`;
 
@@ -194,34 +223,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (role === "ai") {
       bubble.innerHTML = formatMarkdown(text);
-      const actions = document.createElement("div");
-      actions.className = "msg-actions";
-      const copyBtn = document.createElement("button");
-      copyBtn.className = "copy-btn";
-      copyBtn.innerHTML = `📋 Copy`;
-      copyBtn.onclick = () => {
-        navigator.clipboard.writeText(text);
-        copyBtn.textContent = "✓ Copied";
-        setTimeout(() => (copyBtn.textContent = "📋 Copy"), 1500);
-      };
-      actions.appendChild(copyBtn);
       msgDiv.appendChild(bubble);
-      msgDiv.appendChild(actions);
     } else {
       bubble.textContent = text;
       msgDiv.appendChild(bubble);
     }
 
     chatMessages.appendChild(msgDiv);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    if (contentArea) {
+      contentArea.scrollTop = contentArea.scrollHeight;
+    }
   }
 
   // Load chat history from storage
   async function loadChatHistory() {
+    if (!chatMessages) return;
     const history = await Storage.get(`chat_${currentVideoId}`, []);
     if (history && history.length > 0) {
       chatMessages.innerHTML = "";
       history.forEach((msg) => appendMessage(msg.role, msg.text));
+      setChatMode(true);
+    } else {
+      chatMessages.innerHTML = "";
+      setChatMode(false);
     }
   }
 
@@ -240,13 +264,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!question) return;
 
     isRequestPending = true;
-    sendBtn.disabled = true;
+    if (sendBtn) sendBtn.disabled = true;
     appendMessage("user", question);
     await saveMessage("user", question);
 
-    questionInput.value = "";
-    loadingIndicator.classList.remove("hidden");
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    if (questionInput) questionInput.value = "";
+    if (loadingIndicator) loadingIndicator.classList.remove("hidden");
+    if (contentArea) contentArea.scrollTop = contentArea.scrollHeight;
 
     try {
       const res = await fetch(`${serverUrl}/api/chat`, {
@@ -269,141 +293,188 @@ document.addEventListener("DOMContentLoaded", () => {
 
       appendMessage("ai", answer);
       await saveMessage("ai", answer);
-
-      // Verify connection badge is green
-      statusBadge.className = "status-badge status-online";
-      statusText.textContent = "Connected";
+      setStatus("online", "Connected");
     } catch (err) {
       console.error("API Error:", err);
-      const errorMsg = `⚠️ Error: ${err.message}. Please verify the local server is running ('python server.py') and that video '${currentVideoId}' has available transcripts.`;
+      const errorMsg = `⚠️ Error: ${err.message}. Make sure 'python server.py' is running and transcripts are available for video '${currentVideoId}'.`;
       appendMessage("system", errorMsg);
-      statusBadge.className = "status-badge status-offline";
-      statusText.textContent = "Offline";
+      setStatus("offline", "Offline");
     } finally {
-      loadingIndicator.classList.add("hidden");
+      if (loadingIndicator) loadingIndicator.classList.add("hidden");
       isRequestPending = false;
-      sendBtn.disabled = false;
-      questionInput.focus();
+      if (sendBtn) sendBtn.disabled = false;
+      if (questionInput) questionInput.focus();
     }
   }
 
-  // Event Listeners
-  chatForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    sendMessage(questionInput.value);
-  });
-
-  questionInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+  // Form submit
+  if (chatForm) {
+    chatForm.addEventListener("submit", (e) => {
       e.preventDefault();
-      sendMessage(questionInput.value);
-    }
-  });
-
-  // Toggle Video Drawer
-  changeVideoBtn.addEventListener("click", () => {
-    videoInputDrawer.classList.toggle("hidden");
-    if (!videoInputDrawer.classList.contains("hidden")) {
-      manualVideoInput.focus();
-    }
-  });
-
-  // Set Manual Video
-  saveVideoBtn.addEventListener("click", async () => {
-    const raw = manualVideoInput.value.trim();
-    const id = parseVideoId(raw);
-    if (id) {
-      currentVideoId = id;
-      videoIdText.textContent = id;
-      videoTitleText.textContent = `Video (${id})`;
-      await Storage.set("lastVideoId", id);
-      videoInputDrawer.classList.add("hidden");
-      manualVideoInput.value = "";
-      await loadChatHistory();
-    } else {
-      alert("Please enter a valid YouTube Video URL or 11-character Video ID.");
-    }
-  });
-
-  // Demo Video button
-  demoVideoBtn.addEventListener("click", async () => {
-    currentVideoId = "w2tidSx0Zhk";
-    videoIdText.textContent = currentVideoId;
-    videoTitleText.textContent = "Paramedical Admission Guide (Demo Video)";
-    await Storage.set("lastVideoId", currentVideoId);
-    videoInputDrawer.classList.add("hidden");
-    manualVideoInput.value = "";
-    await loadChatHistory();
-  });
-
-  // Quick chips
-  chipButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const prompt = btn.getAttribute("data-prompt");
-      if (prompt) sendMessage(prompt);
+      if (questionInput) sendMessage(questionInput.value);
     });
-  });
+  }
 
-  // Click status badge to re-check
-  statusBadge.addEventListener("click", checkBackendHealth);
-
-  // Settings Modal
-  settingsBtn.addEventListener("click", () => {
-    settingsModal.classList.remove("hidden");
-    serverTestResult.classList.add("hidden");
-  });
-
-  closeSettingsBtn.addEventListener("click", () => {
-    settingsModal.classList.add("hidden");
-  });
-
-  // Save server url changes
-  serverUrlInput.addEventListener("change", async () => {
-    serverUrl = serverUrlInput.value.trim().replace(/\/+$/, "");
-    await Storage.set("serverUrl", serverUrl);
-    checkBackendHealth();
-  });
-
-  // Test connection button in settings
-  testConnectionBtn.addEventListener("click", async () => {
-    testConnectionBtn.textContent = "Testing...";
-    serverTestResult.classList.remove("hidden");
-    try {
-      const targetUrl = serverUrlInput.value.trim().replace(/\/+$/, "");
-      const res = await fetch(`${targetUrl}/health`);
-      if (res.ok) {
-        const data = await res.json();
-        serverTestResult.className = "test-result-box test-success";
-        serverTestResult.innerHTML = `✅ <strong>Connected!</strong> ${data.service} is running smoothly.`;
-        serverUrl = targetUrl;
-        await Storage.set("serverUrl", serverUrl);
-        statusBadge.className = "status-badge status-online";
-        statusText.textContent = "Connected";
-      } else {
-        throw new Error(`HTTP ${res.status}`);
+  // Enter key press in textarea
+  if (questionInput) {
+    questionInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage(questionInput.value);
       }
-    } catch (err) {
-      serverTestResult.className = "test-result-box test-error";
-      serverTestResult.innerHTML = `❌ <strong>Failed:</strong> Could not connect to ${serverUrlInput.value}. Check if <code>python server.py</code> is running.`;
-    } finally {
-      testConnectionBtn.textContent = "🔄 Test Connection";
+    });
+  }
+
+  // GLOBAL EVENT DELEGATION FOR ALL CHIP BUTTONS
+  // Guarantees clicking "Summarize", "Explain", etc. works every time!
+  document.addEventListener("click", (e) => {
+    const chip = e.target.closest(".chip-btn, .chip-btn-mini");
+    if (chip) {
+      e.preventDefault();
+      const prompt = chip.getAttribute("data-prompt") || chip.textContent.trim();
+      if (prompt) {
+        sendMessage(prompt);
+      }
     }
   });
 
-  // Clear chat button
-  clearChatBtn.addEventListener("click", async () => {
-    if (confirm("Are you sure you want to clear the chat history for this video?")) {
-      await Storage.set(`chat_${currentVideoId}`, []);
-      chatMessages.innerHTML = `
-        <div class="message system-message">
-          <div class="message-bubble">
-            <p>🧹 Chat cleared. Ask any new question about this video!</p>
-          </div>
-        </div>
-      `;
+  // Status badge click to re-check health
+  if (statusBadge) {
+    statusBadge.addEventListener("click", checkBackendHealth);
+  }
+
+  // Settings Modal open/close
+  function openSettings() {
+    if (settingsModal) {
+      settingsModal.classList.remove("hidden");
+      if (serverTestResult) serverTestResult.classList.add("hidden");
+      if (serverUrlInput) serverUrlInput.value = serverUrl;
+    }
+  }
+
+  function closeSettings() {
+    if (settingsModal) {
       settingsModal.classList.add("hidden");
     }
+  }
+
+  if (settingsBtn) {
+    settingsBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openSettings();
+    });
+  }
+
+  // Backup listener via event delegation
+  document.addEventListener("click", (e) => {
+    if (e.target.closest("#settingsBtn")) {
+      e.preventDefault();
+      openSettings();
+    }
   });
 
+  if (closeSettingsBtn) {
+    closeSettingsBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      closeSettings();
+    });
+  }
+
+  if (settingsModal) {
+    settingsModal.addEventListener("click", (e) => {
+      if (e.target === settingsModal) {
+        closeSettings();
+      }
+    });
+  }
+
+  // Save server url changes
+  if (serverUrlInput) {
+    serverUrlInput.addEventListener("change", async () => {
+      serverUrl = serverUrlInput.value.trim().replace(/\/+$/, "");
+      await Storage.set("serverUrl", serverUrl);
+      checkBackendHealth();
+    });
+  }
+
+  // Test connection button
+  if (testConnectionBtn) {
+    testConnectionBtn.addEventListener("click", async () => {
+      testConnectionBtn.textContent = "Testing...";
+      if (serverTestResult) serverTestResult.classList.remove("hidden");
+      try {
+        const targetUrl = serverUrlInput ? serverUrlInput.value.trim().replace(/\/+$/, "") : serverUrl;
+        const res = await fetch(`${targetUrl}/health`);
+        if (res.ok) {
+          const data = await res.json();
+          if (serverTestResult) {
+            serverTestResult.className = "test-result-box test-success";
+            serverTestResult.innerHTML = `✅ <strong>Connected!</strong> ${data.service || "Backend"} is online.`;
+          }
+          serverUrl = targetUrl;
+          await Storage.set("serverUrl", serverUrl);
+          setStatus("online", "Connected");
+        } else {
+          throw new Error(`HTTP ${res.status}`);
+        }
+      } catch (err) {
+        if (serverTestResult) {
+          serverTestResult.className = "test-result-box test-error";
+          serverTestResult.innerHTML = `❌ <strong>Failed:</strong> Backend offline. Run <code>python server.py</code>`;
+        }
+      } finally {
+        testConnectionBtn.textContent = "Test Backend";
+      }
+    });
+  }
+
+  // Set Manual Video
+  if (saveVideoBtn) {
+    saveVideoBtn.addEventListener("click", async () => {
+      if (!manualVideoInput) return;
+      const raw = manualVideoInput.value.trim();
+      const id = parseVideoId(raw);
+      if (id) {
+        currentVideoId = id;
+        if (videoIdText) videoIdText.textContent = id;
+        if (videoTitleText) videoTitleText.textContent = `Video: ${id}`;
+        await Storage.set("lastVideoId", id);
+        manualVideoInput.value = "";
+        if (settingsModal) settingsModal.classList.add("hidden");
+        await loadChatHistory();
+      } else {
+        alert("Please enter a valid YouTube Video URL or 11-character Video ID.");
+      }
+    });
+  }
+
+  // Demo Video button
+  if (demoVideoBtn) {
+    demoVideoBtn.addEventListener("click", async () => {
+      currentVideoId = "w2tidSx0Zhk";
+      if (videoIdText) videoIdText.textContent = currentVideoId;
+      if (videoTitleText) videoTitleText.textContent = "Paramedical Admission Guide (Demo)";
+      await Storage.set("lastVideoId", currentVideoId);
+      if (settingsModal) settingsModal.classList.add("hidden");
+      await loadChatHistory();
+    });
+  }
+
+  // Clear chat button
+  if (clearChatBtn) {
+    clearChatBtn.addEventListener("click", async () => {
+      if (confirm("Clear chat history for this video?")) {
+        await Storage.set(`chat_${currentVideoId}`, []);
+        if (chatMessages) {
+          chatMessages.innerHTML = "";
+        }
+        setChatMode(false);
+        if (settingsModal) settingsModal.classList.add("hidden");
+      }
+    });
+  }
+
+  // Run initialization
   init();
 });

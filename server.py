@@ -1,20 +1,17 @@
-from langchain_core.output_parsers import StrOutputParser
-from middleware import get_collection_name
-from middleware import extract_video_id
-from fastapi import status
-from fastapi import FastAPI,HTTPException,Request,Response
+from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-from modules.models import ChatRequest,VideoInfoResponse , ChatResponse , VideoInfoRequest 
-from modules.embedding import embeddings
-from middleware import extract_video_id , get_collection_name , get_embeddings 
-from modules.retriever import get_retriever
-from modules.llm import get_Model
 
 from langchain_chroma import Chroma
-from langchain_core.runnables import RunnableParallel , RunnablePassthrough 
+from langchain_core.runnables import RunnableParallel, RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
+
+from modules.models import ChatRequest, ChatResponse, VideoInfoResponse, VideoInfoRequest
+from modules.embedding import embeddings
+from modules.retriever import get_retriever
+from modules.llm import get_Model
 from modules.promptTemplate import prompt
+from modules.middleware import extract_video_id, get_collection_name, get_embeddings
 
 
 
@@ -26,14 +23,13 @@ app = FastAPI(
 )
 
 
-cors = CORSMiddleware(
+app.add_middleware(
+    CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-app.add_middleware(cors)
 
 @app.get('/health' , status_code=status.HTTP_200_OK)
 def health_check():
@@ -114,4 +110,4 @@ def chat(req : ChatRequest):
         )
 
 if __name__ == '__main__':
-    uvicorn.run(app, host='[IP_ADDRESS]', port=8000)
+    uvicorn.run("server:app", host='127.0.0.1', port=8000, reload=True)
