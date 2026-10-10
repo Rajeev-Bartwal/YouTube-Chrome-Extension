@@ -39,6 +39,7 @@ context = "\n\n".join(doc.page_content for doc in retrieved_docs)
 model = ChatGroq(
     api_key=os.getenv('GROQ_API_KEY'),
     model_name='openai/gpt-oss-120b',
+    temperature=0.5
 )
 
 def format_docs(docs):

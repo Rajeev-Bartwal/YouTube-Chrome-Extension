@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube AI Extension - Local Test Runner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: #f8fafc;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #0f172a;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+    }
+    .wrapper {
+      display: flex;
+      gap: 36px;
+      max-width: 1000px;
+      width: 100%;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .info-pane {
+      flex: 1;
+      min-width: 320px;
+      max-width: 480px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+    }
+    .info-pane h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .badge {
+      background: #f1f5f9;
+      color: #0f172a;
+      border: 1px solid #e2e8f0;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .info-pane p {
+      font-size: 13.5px;
+      color: #475569;
+      line-height: 1.6;
+      margin-bottom: 18px;
+    }
+    .step-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+    }
+    .step-box h3 {
+      font-size: 13px;
+      font-weight: 600;
+      color: #0f172a;
+      margin-bottom: 6px;
+    }
+    .step-box pre {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+      color: #0f172a;
+      overflow-x: auto;
+    }
+    .extension-frame-wrapper {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 6px;
+      box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e2e8f0;
+    }
+    iframe {
+      width: 390px;
+      height: 580px;
+      border: none;
+      border-radius: 12px;
+      display: block;
+      background: #ffffff;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="info-pane">
+      <h1>YouTube AI Extension <span class="badge">Local Tester</span></h1>
+      <p>Test the Chrome extension popup directly in your browser. This simulator runs the exact same <code>popup.html</code> and connects to your local FastAPI RAG backend.</p>
+
+      <div class="step-box">
+        <h3>Step 1: Start Backend Server</h3>
+        <p style="margin-bottom: 6px; font-size: 12px; color: #475569;">Make sure your Python virtual environment and server are running:</p>
+        <pre>python server.py</pre>
+      </div>
+
+      <div class="step-box">
+        <h3>Step 2: Load Unpacked into Chrome</h3>
+        <p style="margin-bottom: 6px; font-size: 12px; color: #475569;">To install directly in Google Chrome / Brave / Edge:</p>
+        <ol style="margin-left: 18px; font-size: 12px; color: #475569; line-height: 1.6;">
+          <li>Open <code>chrome://extensions</code></li>
+          <li>Turn ON <strong>Developer Mode</strong> (top right)</li>
+          <li>Click <strong>Load unpacked</strong></li>
+          <li>Select the <code>extension</code> folder</li>
+        </ol>
+      </div>
+
+      <div class="step-box">
+        <h3>Step 3: Test on YouTube</h3>
+        <p style="font-size: 12px; color: #475569;">Open any YouTube video, click the extension icon in the toolbar, and start chatting!</p>
+      </div>
+    </div>
+
+    <div class="extension-frame-wrapper">
+      <iframe src="popup.html"></iframe>
+    </div>
+  </div>
+</body>
+</html>

@@ -20,3 +20,6 @@ python-dotenv
 langchain-groq
 youtube-transcript-api
 tiktoken
+fastapi
+uvicorn
+pillow

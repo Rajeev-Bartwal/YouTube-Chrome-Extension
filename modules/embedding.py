@@ -8,9 +8,9 @@ embeddings = GoogleGenerativeAIEmbeddings(
     model="models/gemini-embedding-001"
 )
 
-def embeddings_doc(chunks):
+def embeddings_doc(chunks, collection_name='yt-vectors'):
     vector_store = Chroma(
-        collection_name='yt-vectors',
+        collection_name=collection_name,
         embedding_function=embeddings,
         persist_directory="./chroma_db"
     )
